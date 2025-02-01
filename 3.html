@@ -9,8 +9,23 @@
             font-family: 'PressStart2P';
             src: url('PressStart2P-Regular.ttf') format('truetype');
         }
-        body { text-align: center; background-color: white; }
-        canvas { background: white; display: block; margin: auto; border: 2px solid black; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; /* Prevent scrolling */
+        }
+        body {
+            text-align: center;
+            background-color: white;
+            font-family: 'PressStart2P', Arial;
+        }
+        canvas {
+            background: white;
+            display: block;
+            margin: auto;
+            border: 2px solid black;
+        }
 
         /* Style for the difficulty menu */
         #menu {
@@ -41,10 +56,10 @@
 <body>
     <div id="menu">
         <h1>Select Difficulty</h1>
-        <button class="menu-button" onclick="startGame('easy')">Easy</button>
-        <button class="menu-button" onclick="startGame('medium')">Medium</button>
-        <button class="menu-button" onclick="startGame('hard')">Hard</button>
-        <button class="menu-button" onclick="startGame('extreme')">Extreme</button>
+        <button class="menu-button" onclick="getPlayerName('easy')">Easy</button>
+        <button class="menu-button" onclick="getPlayerName('medium')">Medium</button>
+        <button class="menu-button" onclick="getPlayerName('hard')">Hard</button>
+        <button class="menu-button" onclick="getPlayerName('extreme')">Extreme</button>
     </div>
     <canvas id="gameCanvas" width="800" height="800" style="display:none;"></canvas>
 
@@ -64,17 +79,14 @@
         let bullets = [];
         let time = 0;
         let gameOver = false;
-        let difficulty = 1; // Starts at 1 and increases over time
+        let difficulty = 1;
         let gameStarted = false;
-        let difficultyLevel = ''; // Store the difficulty level
-        let spawnInterval; // Store the bullet spawn interval
+        let difficultyLevel = ''; 
+        let currentScore = 0;
+        let playerName = '';
 
         // Key state tracking
         let keys = { up: false, down: false, left: false, right: false, slow: false };
-
-        // Invincibility cheat code
-        let invincible = false;
-        let cheatCode = ""; // To store key sequence
 
         // Bullet class
         class Bullet {
@@ -115,38 +127,35 @@
             player.y = Math.max(8, Math.min(792, player.y));
         }
 
-        // Bullet spawning function with evenly spaced and gradually decreasing gaps
+        // Bullet spawning function with even spacing
         function spawnBullets() {
             let bulletSpeed, bulletSpacing, spawnDelay;
 
-            // Adjust bullet speed, spacing, and spawn delay based on difficulty
             if (difficulty === 1) {
-                bulletSpeed = 1.5; // Easy: Slow bullets
-                bulletSpacing = 100; // Easy: Wider gap
-                spawnDelay = 3000; // Easy: 3 seconds delay
+                bulletSpeed = 1.5;
+                bulletSpacing = 100;
+                spawnDelay = 3000;
             } else if (difficulty === 2) {
-                bulletSpeed = 3.5; // Medium: Moderate speed
-                bulletSpacing = 75; // Medium: Smaller gap
-                spawnDelay = 2000; // Medium: 2 seconds delay
+                bulletSpeed = 3.5;
+                bulletSpacing = 75;
+                spawnDelay = 2000;
             } else if (difficulty === 3) {
-                bulletSpeed = 4.5; // Hard: Faster bullets
-                bulletSpacing = 60; // Hard: Smaller gap
-                spawnDelay = 1000; // Hard: 1 second delay
+                bulletSpeed = 4.5;
+                bulletSpacing = 60;
+                spawnDelay = 1000;
             } else if (difficulty === 4) {
-                bulletSpeed = 5.5; // Extreme: Fast bullets
-                bulletSpacing = 50; // Extreme: Even smaller gap
-                spawnDelay = 800; // Extreme: 0.8 second delay
+                bulletSpeed = 5.5;
+                bulletSpacing = 50;
+                spawnDelay = 800;
             }
 
-            // Function to spawn bullets after a random delay
             setInterval(() => {
-                // Gradually decrease the spacing as time progresses, but keep it even
-                let adjustedSpacing = Math.max(30, bulletSpacing - Math.floor(time / 60)); // Decrease gap every second
+                let adjustedSpacing = Math.max(30, bulletSpacing - Math.floor(time / 60));
                 for (let i = 0; i < canvas.width; i += adjustedSpacing) {
-                    let randomX = Math.floor(Math.random() * (canvas.width - 12)); // Random x position within the canvas width
+                    let randomX = Math.floor(Math.random() * (canvas.width - 12));
                     bullets.push(new Bullet(randomX, 0, bulletSpeed, 12, 18));
                 }
-            }, Math.random() * spawnDelay + 100); // Random delay between 100ms and max delay
+            }, Math.random() * spawnDelay + 100); 
         }
 
         // Game loop
@@ -157,7 +166,7 @@
             }
 
             time++;
-            if (time % 300 === 0) difficulty++; // Increases difficulty every few seconds (after easy mode)
+            if (time % 300 === 0) difficulty++;
 
             // Clear screen
             ctx.fillStyle = WHITE;
@@ -167,7 +176,7 @@
             bullets.forEach(bullet => {
                 bullet.update();
                 bullet.draw();
-                if (!invincible && bullet.collidesWith(player)) {
+                if (bullet.collidesWith(player)) {
                     gameOver = true;
                 }
             });
@@ -179,6 +188,7 @@
             // Movement
             movePlayer();
 
+            currentScore = Math.floor(time / 60); // Score is time survived in seconds
             requestAnimationFrame(gameLoop);
         }
 
@@ -190,27 +200,19 @@
             ctx.font = "30px PressStart2P, Arial";
             ctx.fillText("Game Over!", 270, 400);
             ctx.font = "20px PressStart2P, Arial";
-            ctx.fillText("Survived: " + (time / 60).toFixed(1) + " sec", 240, 450);
+            ctx.fillText("Survived: " + currentScore + " sec", 240, 450);
             ctx.fillText("Difficulty: " + difficultyLevel, 240, 480);
+            ctx.fillText("Player: " + playerName, 240, 510);
             setTimeout(() => location.reload(), 3000);
         }
 
-        // Key handlers for movement and cheat code
+        // Key handlers for movement
         document.addEventListener("keydown", event => {
-            // Handle movement
             if (event.key === "ArrowUp") keys.up = true;
             if (event.key === "ArrowDown") keys.down = true;
             if (event.key === "ArrowLeft") keys.left = true;
             if (event.key === "ArrowRight") keys.right = true;
             if (event.key === "Shift") keys.slow = true;
-
-            // Cheat code activation
-            cheatCode += event.key.toUpperCase(); // Store typed keys
-            if (cheatCode.includes("IDDQD")) {
-                invincible = !invincible; // Toggle invincibility
-                cheatCode = ""; // Reset code
-                console.log("Invincibility:", invincible);
-            }
         });
 
         document.addEventListener("keyup", event => {
@@ -221,39 +223,37 @@
             if (event.key === "Shift") keys.slow = false;
         });
 
-        // Start the game with selected difficulty
+        // Get player name before starting the game
+        function getPlayerName(level) {
+            playerName = prompt("Enter your name:", "");
+            if (playerName === null || playerName === "") playerName = "Anonymous";
+            startGame(level);
+        }
+
+        // Start the game with the selected difficulty
         function startGame(level) {
-            // Set difficulty based on selection
             if (level === 'easy') {
                 difficulty = 1;
                 difficultyLevel = "Easy";
-            } else if (level === 'medium') {
+            }
+            if (level === 'medium') {
                 difficulty = 2;
                 difficultyLevel = "Medium";
-            } else if (level === 'hard') {
+            }
+            if (level === 'hard') {
                 difficulty = 3;
                 difficultyLevel = "Hard";
-            } else if (level === 'extreme') {
+            }
+            if (level === 'extreme') {
                 difficulty = 4;
                 difficultyLevel = "Extreme";
             }
 
-            // Hide the menu and start the game
             document.getElementById("menu").style.display = "none";
-            canvas.style.display = "block";
+            document.getElementById("gameCanvas").style.display = "block";
             gameStarted = true;
-
-            // Start the bullet spawning
             spawnBullets();
-
-            // Start the game loop
             gameLoop();
-        }
-
-        // Start with the menu visible
-        if (!gameStarted) {
-            document.getElementById("menu").style.display = "block";
-            canvas.style.display = "none";
         }
     </script>
 </body>
